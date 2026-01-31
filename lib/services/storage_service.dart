@@ -46,6 +46,41 @@ class StorageService {
     await remove(AppConstants.userTokenKey);
   }
 
+  // User Email
+  static String? getUserEmail() {
+    return read('user_email');
+  }
+
+  static Future<void> saveUserEmail(String email) async {
+    await write('user_email', email);
+  }
+
+  static Future<void> clearUserEmail() async {
+    await remove('user_email');
+  }
+
+  // User Name
+  static String? getUserName() {
+    return read('user_name');
+  }
+
+  static Future<void> saveUserName(String name) async {
+    await write('user_name', name);
+  }
+
+  static Future<void> clearUserName() async {
+    await remove('user_name');
+  }
+
+  // Save generic preference
+  static Future<void> savePreference(String key, String value) async {
+    await write('pref_$key', value);
+  }
+
+  static String? getPreference(String key) {
+    return read('pref_$key');
+  }
+
   // Theme
   static bool? getThemeMode() {
     return read(AppConstants.themeKey);
