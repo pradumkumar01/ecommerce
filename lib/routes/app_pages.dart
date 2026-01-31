@@ -15,6 +15,8 @@ import 'package:ecommerce/views/screens/product_category_screen.dart';
 import 'package:ecommerce/views/screens/notification_screen.dart';
 import 'package:ecommerce/views/screens/orders_screen.dart';
 import 'package:ecommerce/views/screens/order_details_screen.dart';
+import 'package:ecommerce/bindings/notification_binding.dart';
+import 'package:ecommerce/bindings/order_binding.dart';
 
 class AppPages {
   static const String initial = AppConstants.splashRoute;
@@ -43,11 +45,13 @@ class AppPages {
     GetPage(
       name: AppConstants.notificationRoute,
       page: () => NotificationScreen(),
+      binding: NotificationBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
       name: '/orders',
       page: () => OrdersScreen(),
+      binding: OrderBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
