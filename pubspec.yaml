@@ -35,6 +35,31 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   device_preview: 
+  
+  # State Management
+  get: 
+  
+  # API & HTTP
+  http: 
+  dio: 
+  
+  # Local Storage
+  get_storage: 
+  shared_preferences: 
+  
+  # Utilities
+  intl: 
+  path_provider: 
+  
+  # Image
+  cached_network_image: 
+  image_picker: 
+  
+  # Connectivity
+  connectivity_plus:
+  
+  # Logging
+  logger: 
 
 dev_dependencies:
   flutter_test:
