@@ -168,16 +168,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const Spacer(),
                     // Cart icon
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightPrimary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.shopping_bag_outlined,
-                        color: Colors.white,
-                        size: 20,
+                    GestureDetector(
+                      onTap: () => Get.toNamed('/cart'),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.lightPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],

@@ -59,10 +59,20 @@ class CartController extends GetxController {
     }
   }
 
-  void addToCart(Product product, {int quantity = 1}) {
+  void addToCart(
+    Product product, {
+    int quantity = 1,
+    String? size,
+    String? color,
+  }) {
     try {
+      // Create a unique key based on product id, size, and color
+      final itemKey = '${product.id}_${size ?? ''}_${color ?? ''}';
+
       final existingItem = cartItems.firstWhereOrNull(
-        (item) => item.product.id == product.id,
+        (item) =>
+            '${item.product.id}_${item.size ?? ''}_${item.color ?? ''}' ==
+            itemKey,
       );
 
       if (existingItem != null) {
@@ -70,9 +80,18 @@ class CartController extends GetxController {
         cartItems[index] = CartItem(
           product: product,
           quantity: existingItem.quantity + quantity,
+          size: size,
+          color: color,
         );
       } else {
-        cartItems.add(CartItem(product: product, quantity: quantity));
+        cartItems.add(
+          CartItem(
+            product: product,
+            quantity: quantity,
+            size: size,
+            color: color,
+          ),
+        );
       }
 
       _calculateTotals();

@@ -1,89 +1,97 @@
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
 import 'package:ecommerce/controllers/cart_controller.dart';
 
 class CheckoutController extends GetxController {
-  final cartController = Get.find<CartController>();
+  late final CartController cartController;
 
-  final fullNameController = TextEditingController();
-  final emailController = TextEditingController();
-  final phoneController = TextEditingController();
-  final addressController = TextEditingController();
-  final cityController = TextEditingController();
-  final stateController = TextEditingController();
-  final zipCodeController = TextEditingController();
-
-  final RxInt currentStep = 0.obs;
   final RxBool isLoading = false.obs;
-  final RxString selectedPaymentMethod = 'credit_card'.obs;
-  final RxBool agreeToTerms = false.obs;
+  final Rx<String?> selectedAddress = Rx<String?>(null);
+  final Rx<String?> selectedPaymentMethod = Rx<String?>(null);
 
-  final List<String> paymentMethods = [
-    'credit_card',
-    'debit_card',
-    'google_pay',
-    'apple_pay',
-    'paypal',
-  ];
-
-  final List<String> steps = ['Shipping', 'Payment', 'Review'];
+  // Saved addresses and payment methods
+  final RxList<String> savedAddresses = <String>[].obs;
+  final RxList<String> savedPaymentMethods = <String>[].obs;
 
   @override
-  void onClose() {
-    fullNameController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    addressController.dispose();
-    cityController.dispose();
-    stateController.dispose();
-    zipCodeController.dispose();
-    super.onClose();
+  void onInit() {
+    super.onInit();
+    cartController = Get.find<CartController>();
+    _loadSavedData();
   }
 
-  void nextStep() {
-    if (currentStep.value < steps.length - 1) {
-      currentStep.value++;
+  void _loadSavedData() {
+    // Mock saved addresses
+    savedAddresses.value = [
+      '2715 Ash Dr. San Jose, South Dakota 83475',
+      '1234 Oak Street, Los Angeles, CA 90001',
+    ];
+
+    // Mock saved payment methods
+    savedPaymentMethods.value = ['4187', '8921'];
+
+    // Select default
+    if (savedAddresses.isNotEmpty) {
+      selectedAddress.value = savedAddresses.first;
+    }
+    if (savedPaymentMethods.isNotEmpty) {
+      selectedPaymentMethod.value = savedPaymentMethods.first;
     }
   }
 
-  void previousStep() {
-    if (currentStep.value > 0) {
-      currentStep.value--;
-    }
+  void setAddress(String address) {
+    selectedAddress.value = address;
   }
 
-  void selectPaymentMethod(String method) {
+  void setPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
   }
 
+  void addNewAddress(String address) {
+    savedAddresses.add(address);
+    selectedAddress.value = address;
+  }
+
+  void addNewPaymentMethod(String cardLast4) {
+    savedPaymentMethods.add(cardLast4);
+    selectedPaymentMethod.value = cardLast4;
+  }
+
+  bool _validateCheckout() {
+    if (selectedAddress.value == null) {
+      Get.snackbar(
+        'Error',
+        'Please select a shipping address',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    }
+
+    if (selectedPaymentMethod.value == null) {
+      Get.snackbar(
+        'Error',
+        'Please select a payment method',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    }
+
+    if (cartController.cartItems.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Your cart is empty',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> placeOrder() async {
+    if (!_validateCheckout()) return;
+
     try {
       isLoading.value = true;
-
-      // Validate form
-      if (fullNameController.text.isEmpty ||
-          emailController.text.isEmpty ||
-          phoneController.text.isEmpty ||
-          addressController.text.isEmpty ||
-          cityController.text.isEmpty ||
-          stateController.text.isEmpty ||
-          zipCodeController.text.isEmpty) {
-        Get.snackbar(
-          'Error',
-          'Please fill all fields',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
-
-      if (!agreeToTerms.value) {
-        Get.snackbar(
-          'Error',
-          'Please agree to terms and conditions',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
 
       // Simulate order placement
       await Future.delayed(const Duration(seconds: 2));
@@ -91,12 +99,12 @@ class CheckoutController extends GetxController {
       // Clear cart
       cartController.clearCart();
 
-      // Show success
-      Get.offNamedUntil('/order-success', (route) => false);
-
+      // Navigate to success screen
+      Get.offNamed('/order-success');
+    } catch (e) {
       Get.snackbar(
-        'Success',
-        'Order placed successfully!',
+        'Error',
+        'Failed to place order. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

@@ -4,7 +4,6 @@ import 'package:ecommerce/config/app_styles.dart';
 import 'package:ecommerce/config/app_colors.dart';
 import 'package:ecommerce/controllers/checkout_controller.dart';
 import 'package:ecommerce/controllers/cart_controller.dart';
-import 'package:ecommerce/views/widgets/common_widgets.dart';
 
 class CheckoutScreen extends StatelessWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -12,374 +11,107 @@ class CheckoutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(CheckoutController());
+    final cartController = Get.find<CartController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: CustomAppBar(title: 'Checkout', showBackButton: true),
-      body: Obx(
-        () => Column(
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : AppColors.lightSurface,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF0F0F0),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            onPressed: () => Get.back(),
+          ),
+        ),
+        centerTitle: true,
+        title: Text(
+          'Checkout',
+          style: AppStyles.headlineSmall.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Step Indicator
-            _buildStepIndicator(controller, isDark),
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppStyles.spacing),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (controller.currentStep.value == 0)
-                      _buildShippingStep(controller, isDark)
-                    else if (controller.currentStep.value == 1)
-                      _buildPaymentStep(controller, isDark)
-                    else
-                      _buildReviewStep(controller, isDark),
-                  ],
-                ),
-              ),
-            ),
-            // Navigation Buttons
-            _buildNavigationButtons(controller, isDark),
+            // Shipping Address Section
+            _buildSectionTitle('Shipping Address', isDark),
+            const SizedBox(height: 12),
+            Obx(() => _buildAddressCard(controller, isDark)),
+            const SizedBox(height: 24),
+
+            // Payment Method Section
+            _buildSectionTitle('Payment Method', isDark),
+            const SizedBox(height: 12),
+            Obx(() => _buildPaymentCard(controller, isDark)),
+            const SizedBox(height: 24),
+
+            // Order Summary
+            _buildOrderSummary(cartController, isDark),
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomBar(controller, cartController, isDark),
     );
   }
 
-  Widget _buildStepIndicator(CheckoutController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(
-              controller.steps.length,
-              (index) => Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: index <= controller.currentStep.value
-                            ? (isDark
-                                  ? AppColors.darkPrimary
-                                  : AppColors.lightPrimary)
-                            : (isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBorder),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${index + 1}',
-                          style: AppStyles.labelMedium.copyWith(
-                            color: index <= controller.currentStep.value
-                                ? AppColors.white
-                                : (isDark
-                                      ? AppColors.darkText
-                                      : AppColors.lightText),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (index < controller.steps.length - 1)
-                      Expanded(
-                        child: Container(
-                          height: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          color: index < controller.currentStep.value
-                              ? (isDark
-                                    ? AppColors.darkPrimary
-                                    : AppColors.lightPrimary)
-                              : (isDark
-                                    ? AppColors.darkBorder
-                                    : AppColors.lightBorder),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppStyles.spacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: controller.steps
-                .map((step) => Text(step, style: AppStyles.labelMedium))
-                .toList(),
-          ),
-        ],
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return Text(
+      title,
+      style: AppStyles.bodySmall.copyWith(
+        color: isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.lightTextSecondary,
+        fontSize: 12,
       ),
     );
   }
 
-  Widget _buildShippingStep(CheckoutController controller, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Shipping Address', style: AppStyles.headlineMedium),
-        const SizedBox(height: AppStyles.spacing),
-        CustomTextField(
-          label: 'Full Name',
-          controller: controller.fullNameController,
-          prefixIcon: Icons.person_outline,
-        ),
-        const SizedBox(height: AppStyles.spacing),
-        CustomTextField(
-          label: 'Email Address',
-          controller: controller.emailController,
-          prefixIcon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: AppStyles.spacing),
-        CustomTextField(
-          label: 'Phone Number',
-          controller: controller.phoneController,
-          prefixIcon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: AppStyles.spacing),
-        CustomTextField(
-          label: 'Street Address',
-          controller: controller.addressController,
-          prefixIcon: Icons.location_on_outlined,
-        ),
-        const SizedBox(height: AppStyles.spacing),
-        Row(
-          children: [
-            Expanded(
-              child: CustomTextField(
-                label: 'City',
-                controller: controller.cityController,
-              ),
-            ),
-            const SizedBox(width: AppStyles.spacing),
-            Expanded(
-              child: CustomTextField(
-                label: 'State',
-                controller: controller.stateController,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppStyles.spacing),
-        CustomTextField(
-          label: 'ZIP Code',
-          controller: controller.zipCodeController,
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: AppStyles.spacingXLarge),
-        // Shipping Options
-        Text('Shipping Method', style: AppStyles.titleMedium),
-        const SizedBox(height: AppStyles.spacingSmall),
-        _buildShippingOptionCard(
-          'Standard Shipping',
-          '5-7 business days',
-          'Free',
-          isDark,
-        ),
-        const SizedBox(height: AppStyles.spacingSmall),
-        _buildShippingOptionCard(
-          'Express Shipping',
-          '2-3 business days',
-          '\$9.99',
-          isDark,
-        ),
-        const SizedBox(height: AppStyles.spacingSmall),
-        _buildShippingOptionCard(
-          'Overnight Shipping',
-          'Next day',
-          '\$29.99',
-          isDark,
-        ),
-      ],
-    );
-  }
+  Widget _buildAddressCard(CheckoutController controller, bool isDark) {
+    final hasAddress = controller.selectedAddress.value != null;
 
-  Widget _buildShippingOptionCard(
-    String title,
-    String time,
-    String price,
-    bool isDark,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-        ),
-        borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-      ),
-      child: Row(
-        children: [
-          Radio(
-            value: title,
-            groupValue: 'Standard Shipping',
-            onChanged: (val) {},
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppStyles.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  time,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            price,
-            style: AppStyles.titleMedium.copyWith(
-              color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentStep(CheckoutController controller, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Payment Method', style: AppStyles.headlineMedium),
-        const SizedBox(height: AppStyles.spacing),
-        Obx(
-          () => Column(
-            children: [
-              _buildPaymentMethodCard(
-                'credit_card',
-                'Credit Card',
-                Icons.credit_card,
-                controller,
-                isDark,
-              ),
-              const SizedBox(height: AppStyles.spacingSmall),
-              _buildPaymentMethodCard(
-                'debit_card',
-                'Debit Card',
-                Icons.credit_card,
-                controller,
-                isDark,
-              ),
-              const SizedBox(height: AppStyles.spacingSmall),
-              _buildPaymentMethodCard(
-                'google_pay',
-                'Google Pay',
-                Icons.account_balance_wallet,
-                controller,
-                isDark,
-              ),
-              const SizedBox(height: AppStyles.spacingSmall),
-              _buildPaymentMethodCard(
-                'apple_pay',
-                'Apple Pay',
-                Icons.account_balance_wallet,
-                controller,
-                isDark,
-              ),
-              const SizedBox(height: AppStyles.spacingSmall),
-              _buildPaymentMethodCard(
-                'paypal',
-                'PayPal',
-                Icons.account_balance_wallet,
-                controller,
-                isDark,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppStyles.spacingXLarge),
-        if (controller.selectedPaymentMethod.value == 'credit_card' ||
-            controller.selectedPaymentMethod.value == 'debit_card')
-          Column(
-            children: [
-              CustomTextField(
-                label: 'Card Number',
-                hint: '1234 5678 9012 3456',
-                prefixIcon: Icons.credit_card,
-              ),
-              const SizedBox(height: AppStyles.spacing),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(label: 'Expiry Date', hint: 'MM/YY'),
-                  ),
-                  const SizedBox(width: AppStyles.spacing),
-                  Expanded(
-                    child: CustomTextField(label: 'CVV', hint: '123'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppStyles.spacing),
-              CustomTextField(label: 'Cardholder Name', hint: 'John Doe'),
-            ],
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentMethodCard(
-    String value,
-    String label,
-    IconData icon,
-    CheckoutController controller,
-    bool isDark,
-  ) {
-    final isSelected = controller.selectedPaymentMethod.value == value;
     return GestureDetector(
-      onTap: () => controller.selectPaymentMethod(value),
+      onTap: () => _showAddressBottomSheet(controller, isDark),
       child: Container(
-        padding: const EdgeInsets.all(AppStyles.spacing),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected
-                ? (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
-                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-          color: isSelected
-              ? (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
-                    .withOpacity(0.1)
-              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: isSelected
-                  ? (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
-                  : (isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary),
-            ),
-            const SizedBox(width: AppStyles.spacing),
-            Icon(icon),
-            const SizedBox(width: AppStyles.spacingSmall),
-            Text(
-              label,
-              style: AppStyles.titleMedium.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            Expanded(
+              child: Text(
+                hasAddress
+                    ? controller.selectedAddress.value!
+                    : 'Add Shipping Address',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
           ],
         ),
@@ -387,128 +119,102 @@ class CheckoutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewStep(CheckoutController controller, bool isDark) {
-    final cartController = Get.find<CartController>();
+  Widget _buildPaymentCard(CheckoutController controller, bool isDark) {
+    final hasPayment =
+        controller.selectedPaymentMethod.value != null &&
+        controller.selectedPaymentMethod.value!.isNotEmpty;
 
-    return Obx(
-      () => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Order Review', style: AppStyles.headlineMedium),
-          const SizedBox(height: AppStyles.spacing),
-          // Shipping Info
-          _buildReviewSection('Shipping Address', isDark, [
-            '${controller.fullNameController.text}',
-            '${controller.addressController.text}',
-            '${controller.cityController.text}, ${controller.stateController.text} ${controller.zipCodeController.text}',
-            controller.phoneController.text,
-          ]),
-          const SizedBox(height: AppStyles.spacing),
-          // Payment Info
-          _buildReviewSection('Payment Method', isDark, [
-            controller.selectedPaymentMethod.value
-                .replaceAll('_', ' ')
-                .toUpperCase(),
-          ]),
-          const SizedBox(height: AppStyles.spacingXLarge),
-          // Order Summary
-          Text('Order Summary', style: AppStyles.headlineMedium),
-          const SizedBox(height: AppStyles.spacing),
-          Container(
-            padding: const EdgeInsets.all(AppStyles.spacing),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.lightBackground,
-              borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+    return GestureDetector(
+      onTap: () => _showPaymentBottomSheet(controller, isDark),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            if (hasPayment) ...[
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.credit_card,
+                  color: Colors.red.shade400,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                hasPayment
+                    ? '**** ${controller.selectedPaymentMethod.value}'
+                    : 'Add Payment Method',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-            child: Column(
-              children: [
-                _buildReviewRow(
-                  'Subtotal',
-                  '\$${cartController.subtotal.value.toStringAsFixed(2)}',
-                  isDark,
-                ),
-                const SizedBox(height: AppStyles.spacingSmall),
-                _buildReviewRow(
-                  'Shipping',
-                  cartController.shippingCost.value == 0
-                      ? 'Free'
-                      : '\$${cartController.shippingCost.value.toStringAsFixed(2)}',
-                  isDark,
-                ),
-                const SizedBox(height: AppStyles.spacingSmall),
-                _buildReviewRow(
-                  'Tax',
-                  '\$${cartController.taxAmount.value.toStringAsFixed(2)}',
-                  isDark,
-                ),
-                const SizedBox(height: AppStyles.spacing),
-                Divider(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
-                const SizedBox(height: AppStyles.spacing),
-                _buildReviewRow(
-                  'Total',
-                  '\$${cartController.total.value.toStringAsFixed(2)}',
-                  isDark,
-                  isTotal: true,
-                ),
-              ],
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
             ),
-          ),
-          const SizedBox(height: AppStyles.spacingXLarge),
-          // Terms
-          Obx(
-            () => Row(
-              children: [
-                Checkbox(
-                  value: controller.agreeToTerms.value,
-                  onChanged: (value) {
-                    controller.agreeToTerms.value = value ?? false;
-                  },
-                ),
-                Expanded(
-                  child: Text(
-                    'I agree to the Terms and Conditions',
-                    style: AppStyles.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildReviewSection(String title, bool isDark, List<String> items) {
+  Widget _buildOrderSummary(CartController cartController, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(AppStyles.spacing),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightBackground,
-        borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+        color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+          _buildSummaryRow(
+            'Subtotal',
+            '\$${cartController.subtotal.value.toStringAsFixed(0)}',
+            isDark,
           ),
-          const SizedBox(height: AppStyles.spacingSmall),
-          ...items
-              .map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(item, style: AppStyles.bodySmall),
-                ),
-              )
-              .toList(),
+          const SizedBox(height: 12),
+          _buildSummaryRow(
+            'Shipping Cost',
+            '\$${cartController.shippingCost.value.toStringAsFixed(2)}',
+            isDark,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryRow(
+            'Tax',
+            '\$${cartController.taxAmount.value.toStringAsFixed(2)}',
+            isDark,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(),
+          ),
+          _buildSummaryRow(
+            'Total',
+            '\$${cartController.total.value.toStringAsFixed(0)}',
+            isDark,
+            isTotal: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildReviewRow(
+  Widget _buildSummaryRow(
     String label,
     String value,
     bool isDark, {
@@ -519,55 +225,411 @@ class CheckoutScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: isTotal
-              ? AppStyles.titleMedium.copyWith(fontWeight: FontWeight.bold)
-              : AppStyles.bodyMedium,
+          style: AppStyles.bodySmall.copyWith(
+            color: isDark
+                ? AppColors.darkTextSecondary
+                : AppColors.lightTextSecondary,
+            fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
         Text(
           value,
-          style: isTotal
-              ? AppStyles.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isDark
-                      ? AppColors.darkPrimary
-                      : AppColors.lightPrimary,
-                )
-              : AppStyles.bodyMedium,
+          style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildNavigationButtons(CheckoutController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      child: Obx(
-        () => Row(
+  Widget _buildBottomBar(
+    CheckoutController controller,
+    CartController cartController,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
           children: [
-            if (controller.currentStep.value > 0)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: controller.previousStep,
-                  child: const Text('Back'),
-                ),
-              ),
-            if (controller.currentStep.value > 0)
-              const SizedBox(width: AppStyles.spacing),
+            // Total
             Expanded(
-              child: CustomButton(
-                text:
-                    controller.currentStep.value == controller.steps.length - 1
-                    ? 'Place Order'
-                    : 'Next',
-                onPressed:
-                    controller.currentStep.value == controller.steps.length - 1
-                    ? controller.placeOrder
-                    : controller.nextStep,
-                isLoading: controller.isLoading.value,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '\$${cartController.total.value.toStringAsFixed(0)}',
+                    style: AppStyles.headlineSmall.copyWith(
+                      color: isDark ? AppColors.darkText : AppColors.lightText,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Place Order Button
+            Expanded(
+              flex: 2,
+              child: Obx(
+                () => ElevatedButton(
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : () => controller.placeOrder(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.lightPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: controller.isLoading.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Place Order',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddressBottomSheet(CheckoutController controller, bool isDark) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF3A3A3A)
+                      : const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Shipping Address',
+              style: AppStyles.headlineSmall.copyWith(
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Sample Addresses
+            ...controller.savedAddresses
+                .map(
+                  (address) => GestureDetector(
+                    onTap: () {
+                      controller.setAddress(address);
+                      Get.back();
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: controller.selectedAddress.value == address
+                            ? AppColors.lightPrimary.withOpacity(0.1)
+                            : (isDark
+                                  ? const Color(0xFF2D2D2D)
+                                  : const Color(0xFFF5F5F5)),
+                        borderRadius: BorderRadius.circular(12),
+                        border: controller.selectedAddress.value == address
+                            ? Border.all(
+                                color: AppColors.lightPrimary,
+                                width: 2,
+                              )
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: controller.selectedAddress.value == address
+                                ? AppColors.lightPrimary
+                                : (isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              address,
+                              style: AppStyles.bodySmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkText
+                                    : AppColors.lightText,
+                              ),
+                            ),
+                          ),
+                          if (controller.selectedAddress.value == address)
+                            Icon(
+                              Icons.check_circle,
+                              color: AppColors.lightPrimary,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+            const SizedBox(height: 12),
+            // Add New Address Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Get.back();
+                  _showNewAddressDialog(controller, isDark);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add New Address'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.lightPrimary,
+                  side: BorderSide(color: AppColors.lightPrimary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showNewAddressDialog(CheckoutController controller, bool isDark) {
+    final addressController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Add New Address'),
+        content: TextField(
+          controller: addressController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Enter your full address',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (addressController.text.isNotEmpty) {
+                controller.addNewAddress(addressController.text);
+                Get.back();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentBottomSheet(CheckoutController controller, bool isDark) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF3A3A3A)
+                      : const Color(0xFFE0E0E0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Payment Method',
+              style: AppStyles.headlineSmall.copyWith(
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Sample Payment Methods
+            ...controller.savedPaymentMethods
+                .map(
+                  (method) => GestureDetector(
+                    onTap: () {
+                      controller.setPaymentMethod(method);
+                      Get.back();
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: controller.selectedPaymentMethod.value == method
+                            ? AppColors.lightPrimary.withOpacity(0.1)
+                            : (isDark
+                                  ? const Color(0xFF2D2D2D)
+                                  : const Color(0xFFF5F5F5)),
+                        borderRadius: BorderRadius.circular(12),
+                        border: controller.selectedPaymentMethod.value == method
+                            ? Border.all(
+                                color: AppColors.lightPrimary,
+                                width: 2,
+                              )
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.credit_card,
+                              color: Colors.red.shade400,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '**** $method',
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.darkText
+                                    : AppColors.lightText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (controller.selectedPaymentMethod.value == method)
+                            Icon(
+                              Icons.check_circle,
+                              color: AppColors.lightPrimary,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+            const SizedBox(height: 12),
+            // Add New Payment Method Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Get.back();
+                  _showNewPaymentDialog(controller, isDark);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add New Card'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.lightPrimary,
+                  side: BorderSide(color: AppColors.lightPrimary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showNewPaymentDialog(CheckoutController controller, bool isDark) {
+    final cardController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Add New Card'),
+        content: TextField(
+          controller: cardController,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          decoration: const InputDecoration(
+            hintText: 'Last 4 digits of card',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (cardController.text.length == 4) {
+                controller.addNewPaymentMethod(cardController.text);
+                Get.back();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

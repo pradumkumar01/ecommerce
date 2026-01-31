@@ -15,6 +15,7 @@ import 'package:ecommerce/views/screens/product_category_screen.dart';
 import 'package:ecommerce/views/screens/notification_screen.dart';
 import 'package:ecommerce/views/screens/orders_screen.dart';
 import 'package:ecommerce/views/screens/order_details_screen.dart';
+import 'package:ecommerce/views/screens/order_success_screen.dart';
 import 'package:ecommerce/bindings/notification_binding.dart';
 import 'package:ecommerce/bindings/order_binding.dart';
 
@@ -98,6 +99,11 @@ class AppPages {
       name: AppConstants.checkoutRoute,
       page: () => const CheckoutScreen(),
       transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/order-success',
+      page: () => const OrderSuccessScreen(),
+      transition: Transition.fade,
     ),
   ];
 }
