@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce/models/product_model.dart';
-import 'package:ecommerce/services/logger_service.dart';
 
 class ProductListController extends GetxController {
   final RxList<Product> allProducts = <Product>[].obs;
@@ -27,7 +26,7 @@ class ProductListController extends GetxController {
     'Sports',
     'Books',
   ];
-  final Rx<RangeValues> priceRange = Rx<RangeValues>(RangeValues(0, 500));
+  final Rx<RangeValues> priceRange = Rx<RangeValues>(const RangeValues(0, 500));
 
   @override
   void onInit() {
@@ -204,7 +203,7 @@ class ProductListController extends GetxController {
   void resetFilters() {
     searchQuery.value = '';
     selectedCategory.value = 'All';
-    priceRange.value = RangeValues(0, 500);
+    priceRange.value = const RangeValues(0, 500);
     sortBy.value = 'Popularity';
     _applyFiltersAndSort();
   }

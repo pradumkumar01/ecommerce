@@ -1,4 +1,3 @@
-import 'package:get/get.dart';
 import 'package:ecommerce/config/app_constants.dart';
 import 'package:ecommerce/services/logger_service.dart';
 import 'package:ecommerce/services/network_service.dart';
@@ -50,7 +49,7 @@ class ApiService {
       final response = await _dio.get(path, queryParameters: queryParameters);
 
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       if (retries < AppConstants.maxRetries) {
         await Future.delayed(AppConstants.retryDelay);
         return get(
@@ -82,7 +81,7 @@ class ApiService {
       );
 
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       if (retries < AppConstants.maxRetries) {
         await Future.delayed(AppConstants.retryDelay);
         return post(
@@ -115,7 +114,7 @@ class ApiService {
       );
 
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       if (retries < AppConstants.maxRetries) {
         await Future.delayed(AppConstants.retryDelay);
         return put(
@@ -148,7 +147,7 @@ class ApiService {
       );
 
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       if (retries < AppConstants.maxRetries) {
         await Future.delayed(AppConstants.retryDelay);
         return delete(

@@ -25,7 +25,7 @@ class CartController extends GetxController {
     try {
       final cartData = StorageService.getCartData();
       if (cartData != null) {
-        cartItems.value = (cartData as List)
+        cartItems.value = cartData
             .map((item) => CartItem.fromJson(item as Map<String, dynamic>))
             .toList();
       }

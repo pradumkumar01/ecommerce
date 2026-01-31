@@ -201,9 +201,7 @@ class AuthScreen extends StatelessWidget {
                   text: authController.isLoginMode.value
                       ? 'Sign In'
                       : 'Create Account',
-                  onPressed: authController.isLoginMode.value
-                      ? authController.login
-                      : authController.register,
+                  onPressed: () {},
                   isLoading: authController.isLoading.value,
                   height: AppStyles.buttonHeight,
                 ),
