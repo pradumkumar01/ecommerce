@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart' hide ErrorWidget;
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce/config/app_styles.dart';
 import 'package:ecommerce/config/app_colors.dart';
 import 'package:ecommerce/controllers/product_detail_controller.dart';
-import 'package:ecommerce/views/widgets/common_widgets.dart';
+import 'package:ecommerce/controllers/cart_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ProductDetailScreen extends StatelessWidget {
@@ -12,571 +12,792 @@ class ProductDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ProductDetailController());
+    final cartController = Get.find<CartController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Product Details',
-        showBackButton: true,
-        actions: [
-          Obx(
-            () => IconButton(
-              icon: Icon(
-                controller.isFavorite.value
-                    ? Icons.favorite
-                    : Icons.favorite_outline,
-                color: AppColors.lightError,
-              ),
-              onPressed: controller.toggleFavorite,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.product.value == null) {
+          return const Center(child: Text('Product not found'));
+        }
+
+        return CustomScrollView(
+          slivers: [
+            // Product Image with AppBar
+            SliverToBoxAdapter(child: _buildProductImage(controller, isDark)),
+            // Product Details
+            SliverToBoxAdapter(
+              child: _buildProductDetails(controller, isDark, context),
             ),
+          ],
+        );
+      }),
+      bottomNavigationBar: Obx(() {
+        if (controller.product.value == null) return const SizedBox.shrink();
+        return _buildBottomBar(controller, cartController, isDark);
+      }),
+    );
+  }
+
+  Widget _buildProductImage(ProductDetailController controller, bool isDark) {
+    return Stack(
+      children: [
+        // Product Image
+        Container(
+          height: 380,
+          width: double.infinity,
+          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+          child: CachedNetworkImage(
+            imageUrl: controller.product.value?.imageUrl ?? '',
+            fit: BoxFit.cover,
+            placeholder: (context, url) =>
+                const Center(child: CircularProgressIndicator()),
+            errorWidget: (context, url, error) =>
+                const Icon(Icons.image_not_supported_outlined, size: 60),
           ),
-          IconButton(icon: const Icon(Icons.share_outlined), onPressed: () {}),
-        ],
-      ),
-      body: Obx(
-        () => controller.isLoading.value
-            ? const LoadingWidget()
-            : controller.product.value == null
-            ? const ErrorWidget(message: 'Product not found')
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image Carousel
-                    _buildImageCarousel(controller, isDark),
-                    // Product Info
-                    _buildProductInfo(controller, isDark),
-                    // Description
-                    _buildDescription(controller, isDark),
-                    // Specifications
-                    _buildSpecifications(controller, isDark),
-                    // Reviews Section
-                    _buildReviewsSection(controller, isDark),
-                    // Related Products
-                    _buildRelatedProducts(controller, isDark),
-                    const SizedBox(height: AppStyles.spacingLarge),
-                  ],
+        ),
+        // Back button and favorite
+        Positioned(
+          top: MediaQuery.of(Get.context!).padding.top + 8,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildCircleButton(
+                icon: Icons.arrow_back_ios_new,
+                onTap: () => Get.back(),
+                isDark: isDark,
+              ),
+              Obx(
+                () => _buildCircleButton(
+                  icon: controller.isFavorite.value
+                      ? Icons.favorite
+                      : Icons.favorite_outline,
+                  onTap: controller.toggleFavorite,
+                  isDark: isDark,
+                  iconColor: controller.isFavorite.value ? Colors.red : null,
                 ),
               ),
-      ),
-      bottomNavigationBar: Obx(
-        () => controller.product.value == null
-            ? const SizedBox.shrink()
-            : Container(
-                padding: const EdgeInsets.all(AppStyles.spacing),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurface
-                      : AppColors.lightSurface,
-                  boxShadow: AppStyles.shadowListMedium,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Add to Cart',
-                        onPressed: controller.addToCart,
-                        isOutlined: true,
-                      ),
-                    ),
-                    const SizedBox(width: AppStyles.spacing),
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Buy Now',
-                        onPressed: controller.buyNow,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+    Color? iconColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF3A3A3A) : Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color:
+              iconColor ?? (isDark ? AppColors.darkText : AppColors.lightText),
+        ),
       ),
     );
   }
 
-  Widget _buildImageCarousel(ProductDetailController controller, bool isDark) {
+  Widget _buildProductDetails(
+    ProductDetailController controller,
+    bool isDark,
+    BuildContext context,
+  ) {
+    final product = controller.product.value!;
+
     return Container(
-      color: isDark ? AppColors.darkSurface : AppColors.lightBackground,
-      child: Column(
-        children: [
-          // Main Image
-          SizedBox(
-            height: 300,
-            child: Obx(
-              () => CachedNetworkImage(
-                imageUrl: controller
-                    .selectedImages[controller.selectedImageIndex.value],
-                fit: BoxFit.contain,
-                placeholder: (context, url) => const LoadingWidget(),
-                errorWidget: (context, url, error) =>
-                    Icon(Icons.image_outlined, size: AppStyles.iconXXLarge),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppStyles.spacing),
-          // Thumbnail Images
-          if (controller.selectedImages.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppStyles.spacing,
-              ),
-              child: Obx(
-                () => Row(
-                  children: List.generate(
-                    controller.selectedImages.length,
-                    (index) => Padding(
-                      padding: const EdgeInsets.only(
-                        right: AppStyles.spacingSmall,
-                      ),
-                      child: GestureDetector(
-                        onTap: () => controller.selectImage(index),
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color:
-                                  controller.selectedImageIndex.value == index
-                                  ? (isDark
-                                        ? AppColors.darkPrimary
-                                        : AppColors.lightPrimary)
-                                  : (isDark
-                                        ? AppColors.darkBorder
-                                        : AppColors.lightBorder),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              AppStyles.radiusMedium,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppStyles.radiusMedium,
-                            ),
-                            child: CachedNetworkImage(
-                              imageUrl: controller.selectedImages[index],
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: AppStyles.spacing),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductInfo(ProductDetailController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product Name
           Text(
-            controller.product.value?.name ?? '',
-            style: AppStyles.displaySmall,
+            product.name,
+            style: AppStyles.headlineMedium.copyWith(
+              color: isDark ? AppColors.darkText : AppColors.lightText,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: AppStyles.spacingSmall),
-          // Rating
-          Row(
-            children: [
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < (controller.product.value?.rating.toInt() ?? 0)
-                        ? Icons.star
-                        : Icons.star_outline,
-                    color: AppColors.starColor,
-                    size: AppStyles.iconMedium,
-                  );
-                }),
-              ),
-              const SizedBox(width: AppStyles.spacingSmall),
-              Text(
-                '${controller.product.value?.rating ?? 0}',
-                style: AppStyles.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+
+          // Price
+          Text(
+            '\$${product.price.toStringAsFixed(0)}',
+            style: AppStyles.headlineSmall.copyWith(
+              color: AppColors.lightPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Size Selector
+          _buildSizeSelector(controller, isDark, context),
+          const SizedBox(height: 20),
+
+          // Color Selector
+          _buildColorSelector(controller, isDark, context),
+          const SizedBox(height: 20),
+
+          // Quantity Selector
+          _buildQuantitySelector(controller, isDark),
+          const SizedBox(height: 24),
+
+          // Description
+          Text(
+            product.description,
+            style: AppStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Shipping & Returns
+          _buildShippingInfo(isDark),
+          const SizedBox(height: 24),
+
+          // Reviews Section
+          _buildReviewsSection(controller, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSizeSelector(
+    ProductDetailController controller,
+    bool isDark,
+    BuildContext context,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Size',
+          style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _showSizeBottomSheet(controller, isDark, context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Obx(
+                  () => Text(
+                    controller.selectedSize.value,
+                    style: AppStyles.bodySmall.copyWith(
+                      color: isDark ? AppColors.darkText : AppColors.lightText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppStyles.spacingSmall),
-              Text(
-                '(${controller.product.value?.reviewCount ?? 0} reviews)',
-                style: AppStyles.bodySmall.copyWith(
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.keyboard_arrow_down,
                   color: isDark
                       ? AppColors.darkTextSecondary
                       : AppColors.lightTextSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppStyles.spacing),
-          // Price and Stock
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Price',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                    ),
-                  ),
-                  Text(
-                    '\$${controller.product.value?.price ?? 0}',
-                    style: AppStyles.displayMedium.copyWith(
-                      color: isDark
-                          ? AppColors.darkPrimary
-                          : AppColors.lightPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppStyles.spacing,
-                  vertical: AppStyles.spacingSmall,
-                ),
-                decoration: BoxDecoration(
-                  color: controller.product.value?.inStock ?? false
-                      ? AppColors.lightSuccess.withOpacity(0.2)
-                      : AppColors.lightError.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-                ),
-                child: Text(
-                  controller.product.value?.inStock ?? false
-                      ? 'In Stock'
-                      : 'Out of Stock',
-                  style: AppStyles.labelMedium.copyWith(
-                    color: controller.product.value?.inStock ?? false
-                        ? AppColors.lightSuccess
-                        : AppColors.lightError,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppStyles.spacing),
-          // Quantity Selector
-          Text('Quantity', style: AppStyles.titleMedium),
-          const SizedBox(height: AppStyles.spacingSmall),
-          Obx(
-            () => Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                ),
-                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: controller.decrementQuantity,
-                    icon: const Icon(Icons.remove),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        '${controller.quantity.value}',
-                        style: AppStyles.titleLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: controller.incrementQuantity,
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDescription(ProductDetailController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Description', style: AppStyles.headlineMedium),
-          const SizedBox(height: AppStyles.spacingSmall),
-          Text(
-            controller.product.value?.description ?? '',
-            style: AppStyles.bodyMedium.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecifications(ProductDetailController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Specifications', style: AppStyles.headlineMedium),
-          const SizedBox(height: AppStyles.spacing),
-          _buildSpecRow('Brand', 'Premium Audio', isDark),
-          _buildSpecRow(
-            'Model',
-            controller.product.value?.sku ?? 'N/A',
-            isDark,
-          ),
-          _buildSpecRow('Color', 'Black', isDark),
-          _buildSpecRow('Warranty', '1 Year', isDark),
-          _buildSpecRow('Shipping', 'Free Worldwide', isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecRow(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppStyles.spacingSmall),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppStyles.bodyMedium.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewsSection(ProductDetailController controller, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Customer Reviews', style: AppStyles.headlineMedium),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'See All',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppStyles.spacing),
-          Obx(
-            () => Column(
-              children: controller.reviews
-                  .take(3)
-                  .map((review) => _buildReviewCard(review, isDark))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewCard(dynamic review, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  review.userName,
-                  style: AppStyles.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    ...List.generate(5, (index) {
-                      return Icon(
-                        index < review.rating ? Icons.star : Icons.star_outline,
-                        color: AppColors.starColor,
-                        size: AppStyles.iconSmall,
-                      );
-                    }),
-                    const SizedBox(width: AppStyles.spacingSmall),
-                    if (review.verified)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppStyles.spacingSmall,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightSuccess.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(
-                            AppStyles.radiusSmall,
-                          ),
-                        ),
-                        child: Text(
-                          'Verified',
-                          style: AppStyles.labelSmall.copyWith(
-                            color: AppColors.lightSuccess,
-                          ),
-                        ),
-                      ),
-                  ],
+                  size: 20,
                 ),
               ],
             ),
-            Text(
-              review.date,
-              style: AppStyles.bodySmall.copyWith(
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.lightTextSecondary,
-              ),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: AppStyles.spacingSmall),
+      ],
+    );
+  }
+
+  Widget _buildColorSelector(
+    ProductDetailController controller,
+    bool isDark,
+    BuildContext context,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
         Text(
-          review.comment,
+          'Color',
           style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _showColorBottomSheet(controller, isDark, context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Obx(
+                  () => Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: controller.getColorFromName(
+                        controller.selectedColor.value,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.lightTextSecondary,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuantitySelector(
+    ProductDetailController controller,
+    bool isDark,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Quantity',
+          style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            children: [
+              // Decrease button
+              GestureDetector(
+                onTap: controller.decreaseQuantity,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.remove,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+              // Quantity
+              Obx(
+                () => Container(
+                  width: 50,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${controller.quantity.value}',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: isDark ? AppColors.darkText : AppColors.lightText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              // Increase button
+              GestureDetector(
+                onTap: controller.increaseQuantity,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 18),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShippingInfo(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Shipping & Returns',
+          style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Free standard shipping and free 60-day returns',
+          style: AppStyles.bodySmall.copyWith(
             color: isDark
                 ? AppColors.darkTextSecondary
                 : AppColors.lightTextSecondary,
           ),
         ),
-        const SizedBox(height: AppStyles.spacing),
-        Divider(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-        const SizedBox(height: AppStyles.spacing),
       ],
     );
   }
 
-  Widget _buildRelatedProducts(
-    ProductDetailController controller,
-    bool isDark,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(AppStyles.spacing),
+  Widget _buildReviewsSection(ProductDetailController controller, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Reviews',
+          style: AppStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Rating Summary
+        Row(
+          children: [
+            Text(
+              '4.5',
+              style: AppStyles.headlineLarge.copyWith(
+                color: isDark ? AppColors.darkText : AppColors.lightText,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ratings',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '213 Reviews',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Reviews List
+        ...controller.reviews
+            .take(2)
+            .map((review) => _buildReviewCard(review, isDark)),
+      ],
+    );
+  }
+
+  Widget _buildReviewCard(dynamic review, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Related Products', style: AppStyles.headlineMedium),
-          const SizedBox(height: AppStyles.spacing),
-          Obx(
-            () => SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: controller.relatedProducts.map((product) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppStyles.spacing),
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigate to related product
-                      },
-                      child: Container(
-                        width: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
-                            AppStyles.radiusMedium,
-                          ),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.darkBorder
-                                : AppColors.lightBorder,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(
-                                  AppStyles.radiusMedium,
-                                ),
-                                topRight: Radius.circular(
-                                  AppStyles.radiusMedium,
-                                ),
-                              ),
-                              child: CachedNetworkImage(
-                                imageUrl: product.imageUrl,
-                                fit: BoxFit.cover,
-                                height: 120,
-                                width: 150,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(
-                                AppStyles.spacingSmall,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppStyles.labelMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '\$${product.price}',
-                                    style: AppStyles.labelMedium.copyWith(
-                                      color: isDark
-                                          ? AppColors.darkPrimary
-                                          : AppColors.lightPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFFE0E0E0),
+                child: Text(
+                  review.userName[0],
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.userName,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkText
+                            : AppColors.lightText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(
+                        5,
+                        (index) => Icon(
+                          index < review.rating
+                              ? Icons.star
+                              : Icons.star_border,
+                          size: 14,
+                          color: Colors.amber,
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            review.comment,
+            style: AppStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            review.date,
+            style: AppStyles.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
+              fontSize: 12,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBottomBar(
+    ProductDetailController controller,
+    CartController cartController,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Price
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '\$${controller.product.value?.price.toStringAsFixed(0) ?? '0'}',
+                    style: AppStyles.headlineSmall.copyWith(
+                      color: isDark ? AppColors.darkText : AppColors.lightText,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Add to Bag button
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => controller.addToCart(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  'Add to Bag',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSizeBottomSheet(
+    ProductDetailController controller,
+    bool isDark,
+    BuildContext context,
+  ) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Size',
+                  style: AppStyles.headlineSmall.copyWith(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Icon(
+                    Icons.close,
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ...controller.availableSizes
+                .map(
+                  (size) => Obx(() {
+                    final isSelected = controller.selectedSize.value == size;
+                    return GestureDetector(
+                      onTap: () {
+                        controller.selectSize(size);
+                        Get.back();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.lightPrimary
+                              : (isDark
+                                    ? const Color(0xFF2D2D2D)
+                                    : const Color(0xFFF5F5F5)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              size,
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                          ? AppColors.darkText
+                                          : AppColors.lightText),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                )
+                .toList(),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showColorBottomSheet(
+    ProductDetailController controller,
+    bool isDark,
+    BuildContext context,
+  ) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Color',
+                  style: AppStyles.headlineSmall.copyWith(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Icon(
+                    Icons.close,
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ...controller.availableColors
+                .map(
+                  (colorName) => Obx(() {
+                    final isSelected =
+                        controller.selectedColor.value == colorName;
+                    final color = controller.getColorFromName(colorName);
+                    return GestureDetector(
+                      onTap: () {
+                        controller.selectColor(colorName);
+                        Get.back();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.lightPrimary
+                              : (isDark
+                                    ? const Color(0xFF2D2D2D)
+                                    : const Color(0xFFF5F5F5)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black12,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              colorName,
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                          ? AppColors.darkText
+                                          : AppColors.lightText),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                )
+                .toList(),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 }

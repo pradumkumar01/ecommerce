@@ -95,8 +95,15 @@ class Product {
 class CartItem {
   final Product product;
   final int quantity;
+  final String? size;
+  final String? color;
 
-  CartItem({required this.product, required this.quantity});
+  CartItem({
+    required this.product,
+    required this.quantity,
+    this.size,
+    this.color,
+  });
 
   double get total => product.price * quantity;
 
@@ -104,17 +111,31 @@ class CartItem {
     return CartItem(
       product: Product.fromJson(json['product'] as Map<String, dynamic>),
       quantity: json['quantity'] as int? ?? 1,
+      size: json['size'] as String?,
+      color: json['color'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'product': product.toJson(), 'quantity': quantity};
+    return {
+      'product': product.toJson(),
+      'quantity': quantity,
+      'size': size,
+      'color': color,
+    };
   }
 
-  CartItem copyWith({Product? product, int? quantity}) {
+  CartItem copyWith({
+    Product? product,
+    int? quantity,
+    String? size,
+    String? color,
+  }) {
     return CartItem(
       product: product ?? this.product,
       quantity: quantity ?? this.quantity,
+      size: size ?? this.size,
+      color: color ?? this.color,
     );
   }
 }
