@@ -16,8 +16,16 @@ import 'package:ecommerce/views/screens/notification_screen.dart';
 import 'package:ecommerce/views/screens/orders_screen.dart';
 import 'package:ecommerce/views/screens/order_details_screen.dart';
 import 'package:ecommerce/views/screens/order_success_screen.dart';
+import 'package:ecommerce/views/screens/profile_screen.dart';
+import 'package:ecommerce/views/screens/address_screen.dart';
+import 'package:ecommerce/views/screens/add_address_screen.dart';
+import 'package:ecommerce/views/screens/payment_screen.dart';
+import 'package:ecommerce/views/screens/add_card_screen.dart';
+import 'package:ecommerce/views/screens/wishlist_screen.dart';
+import 'package:ecommerce/views/screens/favourites_screen.dart';
 import 'package:ecommerce/bindings/notification_binding.dart';
 import 'package:ecommerce/bindings/order_binding.dart';
+import 'package:ecommerce/bindings/profile_binding.dart';
 
 class AppPages {
   static const String initial = AppConstants.splashRoute;
@@ -104,6 +112,42 @@ class AppPages {
       name: '/order-success',
       page: () => const OrderSuccessScreen(),
       transition: Transition.fade,
+    ),
+    GetPage(
+      name: '/profile',
+      page: () => ProfileScreen(),
+      binding: ProfileBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/address',
+      page: () => AddressScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/add-address',
+      page: () => AddAddressScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/payment',
+      page: () => PaymentScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/add-card',
+      page: () => AddCardScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/wishlist',
+      page: () => WishlistScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/favourites',
+      page: () => FavouritesScreen(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }
