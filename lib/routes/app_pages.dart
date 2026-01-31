@@ -10,6 +10,11 @@ import 'package:ecommerce/views/screens/login_screen.dart';
 import 'package:ecommerce/views/screens/register_screen.dart';
 import 'package:ecommerce/views/screens/forgot_password_screen.dart';
 import 'package:ecommerce/views/screens/onboarding_screen.dart';
+import 'package:ecommerce/views/screens/category_list_screen.dart';
+import 'package:ecommerce/views/screens/product_category_screen.dart';
+import 'package:ecommerce/views/screens/notification_screen.dart';
+import 'package:ecommerce/views/screens/orders_screen.dart';
+import 'package:ecommerce/views/screens/order_details_screen.dart';
 
 class AppPages {
   static const String initial = AppConstants.splashRoute;
@@ -36,6 +41,21 @@ class AppPages {
       transition: Transition.fadeIn,
     ),
     GetPage(
+      name: AppConstants.notificationRoute,
+      page: () => NotificationScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/orders',
+      page: () => OrdersScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/order-details',
+      page: () => OrderDetailsScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: '/forgot-password',
       page: () => const ForgotPasswordScreen(),
       transition: Transition.rightToLeft,
@@ -43,6 +63,16 @@ class AppPages {
     GetPage(
       name: '/onboarding',
       page: () => const OnboardingScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/category-list',
+      page: () => const CategoryListScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/product-category',
+      page: () => const ProductCategoryScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

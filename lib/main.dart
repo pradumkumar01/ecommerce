@@ -9,6 +9,8 @@ import 'package:ecommerce/controllers/product_list_controller.dart';
 import 'package:ecommerce/controllers/product_detail_controller.dart';
 import 'package:ecommerce/controllers/cart_controller.dart';
 import 'package:ecommerce/controllers/checkout_controller.dart';
+import 'package:ecommerce/controllers/notification_controller.dart';
+import 'package:ecommerce/controllers/order_controller.dart';
 import 'package:ecommerce/routes/app_pages.dart';
 import 'package:ecommerce/services/storage_service.dart';
 
@@ -24,6 +26,8 @@ void main() async {
   Get.put(ProductDetailController());
   Get.put(CartController());
   Get.put(CheckoutController());
+  Get.put(NotificationController());
+  Get.put(OrderController());
 
   runApp(DevicePreview(enabled: true, builder: (context) => const MyApp()));
 }

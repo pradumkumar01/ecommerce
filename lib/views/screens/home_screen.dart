@@ -2,544 +2,550 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce/config/app_styles.dart';
 import 'package:ecommerce/config/app_colors.dart';
-import 'package:ecommerce/config/app_constants.dart';
 import 'package:ecommerce/controllers/home_controller.dart';
 import 'package:ecommerce/controllers/auth_controller.dart';
-import 'package:ecommerce/controllers/theme_controller.dart';
-import 'package:ecommerce/models/product_model.dart';
-import 'package:ecommerce/views/widgets/common_widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedBottomNav = 0;
+  String _selectedGender = 'Men';
+
+  final authController = Get.find<AuthController>();
+  final homeController = Get.find<HomeController>();
+
+  final List<Map<String, String>> categories = [
+    {
+      'name': 'Hoodies',
+      'image':
+          'https://wallpapers.com/images/hd/hoodie-for-kids-png-87-zth1al1rho11xdpj.png',
+    },
+    {
+      'name': 'Shorts',
+      'image':
+          'https://wallpapers.com/images/hd/hoodie-for-kids-png-87-zth1al1rho11xdpj.png',
+    },
+    {
+      'name': 'Shoes',
+      'image':
+          'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=150&h=150&fit=crop',
+    },
+    {
+      'name': 'Bag',
+      'image':
+          'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=150&h=150&fit=crop',
+    },
+    {
+      'name': 'Accessories',
+      'image':
+          'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=150&h=150&fit=crop',
+    },
+  ];
+
+  final List<Map<String, dynamic>> topSellingProducts = [
+    {
+      'name': "Men's Harrington Jacket",
+      'price': '\$148.00',
+      'image':
+          'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=250&h=250&fit=crop',
+    },
+    {
+      'name': "Max Cirro Men's Slides",
+      'price': '\$55.00',
+      'oldPrice': '\$100.97',
+      'image':
+          'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=250&h=250&fit=crop',
+    },
+    {
+      'name': "Men's Casual Shirt",
+      'price': '\$66',
+      'image':
+          'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=250&h=250&fit=crop',
+    },
+  ];
+
+  final List<Map<String, dynamic>> hoodiePeekProducts = [
+    {
+      'name': "Men's Fleece Pullover Hoodie",
+      'price': '\$100.00',
+      'image':
+          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200&h=250&fit=crop',
+    },
+    {
+      'name': "Fleece Pullover Skate Hoodie",
+      'price': '\$150.97',
+      'image':
+          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200&h=250&fit=crop',
+    },
+    {
+      'name': "Fleece Skate Hoodie",
+      'price': '\$110.00',
+      'image':
+          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200&h=250&fit=crop',
+    },
+    {
+      'name': "Men's Ice-Dye Pullover Hoodie",
+      'price': '\$128.97',
+      'image':
+          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200&h=250&fit=crop',
+    },
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    final homeController = Get.put(HomeController());
-    final themeController = Get.find<ThemeController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'ShopHub',
-          style: AppStyles.headlineLarge.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkText : AppColors.lightText,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: Obx(
-              () => Icon(
-                themeController.isDarkMode.value
-                    ? Icons.light_mode
-                    : Icons.dark_mode,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with profile and dropdown
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    // Profile picture
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.lightPrimary,
+                      child: Text(
+                        authController.userName.value.isNotEmpty
+                            ? authController.userName.value[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Gender dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? Color(0xFF3A3A3A) : Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedGender,
+                        underline: const SizedBox(),
+                        style: AppStyles.bodySmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkText
+                              : AppColors.lightText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        dropdownColor: isDark
+                            ? Color(0xFF2D2D2D)
+                            : Colors.white,
+                        items: ['Men', 'Women', 'Kids'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedGender = newValue ?? 'Men';
+                          });
+                        },
+                      ),
+                    ),
+                    const Spacer(),
+                    // Cart icon
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightPrimary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            onPressed: themeController.toggleTheme,
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              _showDrawer(context);
-            },
-          ),
-        ],
-        elevation: 0,
-      ),
-      body: Obx(
-        () => homeController.isLoading.value
-            ? const LoadingWidget()
-            : RefreshIndicator(
-                onRefresh: () async {
-                  homeController.fetchData();
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppStyles.spacing),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Color(0xFF3A3A3A) : Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
                     children: [
-                      // Search Bar
-                      _buildSearchBar(context),
-                      const SizedBox(height: AppStyles.spacingLarge),
-                      // Banner
-                      _buildBanner(homeController, isDark),
-                      const SizedBox(height: AppStyles.spacingLarge),
-                      // Categories
-                      _buildCategories(homeController, isDark),
-                      const SizedBox(height: AppStyles.spacingLarge),
-                      // Featured Products
-                      _buildFeaturedSection(homeController, isDark),
-                      const SizedBox(height: AppStyles.spacingLarge),
-                      // All Products
-                      _buildAllProductsSection(homeController, isDark, context),
+                      Icon(
+                        Icons.search,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search',
+                            border: InputBorder.none,
+                            hintStyle: AppStyles.bodySmall.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                          style: AppStyles.bodySmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkText
+                                : AppColors.lightText,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.toNamed(AppConstants.cartRoute);
-        },
-        child: Obx(
-          () => Stack(
-            alignment: Alignment.topRight,
-            children: [
-              const Icon(Icons.shopping_cart_outlined),
-              if (homeController.cartItemCount.value > 0)
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: AppColors.lightError,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  child: Text(
-                    '${homeController.cartItemCount.value}',
-                    style: AppStyles.labelSmall.copyWith(
-                      color: AppColors.white,
+              const SizedBox(height: 20),
+              // Categories section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Categories',
+                          style: AppStyles.headlineSmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkText
+                                : AppColors.lightText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Get.toNamed('/category-list'),
+                          child: Text(
+                            'See All',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.lightPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: GestureDetector(
+                              onTap: () => Get.toNamed(
+                                '/product-category',
+                                arguments: categories[index]['name'],
+                              ),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 70,
+                                    height: 70,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Color(0xFF3A3A3A)
+                                          : Color(0xFFF5F5F5),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: CachedNetworkImage(
+                                        imageUrl: categories[index]['image']!,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) =>
+                                            Container(
+                                              color: isDark
+                                                  ? Color(0xFF3A3A3A)
+                                                  : Color(0xFFF5F5F5),
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    categories[index]['name']!,
+                                    style: AppStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkText
+                                          : AppColors.lightText,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              // Top Selling section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Top Selling',
+                          style: AppStyles.headlineSmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkText
+                                : AppColors.lightText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'See All',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.lightPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 280,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: topSellingProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = topSellingProducts[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: _buildProductCard(product, isDark),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // New In section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'New In',
+                          style: AppStyles.headlineSmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkText
+                                : AppColors.lightText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'See All',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.lightPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 280,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: hoodiePeekProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = hoodiePeekProducts[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: _buildProductCard(product, isDark),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
-    );
-  }
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedBottomNav,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: isDark
+            ? AppColors.darkSurface
+            : AppColors.lightSurface,
+        selectedItemColor: AppColors.lightPrimary,
+        unselectedItemColor: isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.lightTextSecondary,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_outlined),
+            label: '',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
+        ],
+        onTap: (index) {
+          setState(() {
+            _selectedBottomNav = index;
+          });
 
-  Widget _buildSearchBar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightBackground,
-        borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-        ),
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search products...',
-          hintStyle: AppStyles.bodyMedium.copyWith(
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.lightTextSecondary,
-          ),
-          border: InputBorder.none,
-          prefixIcon: Icon(
-            Icons.search,
-            color: isDark
-                ? AppColors.darkTextSecondary
-                : AppColors.lightTextSecondary,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: AppStyles.spacingSmall,
-          ),
-        ),
-        onSubmitted: (query) {
-          // Handle search
+          // Handle navigation for bottom navigation items
+          if (index == 1) {
+            Get.toNamed('/notifications');
+          } else if (index == 2) {
+            Get.toNamed('/orders');
+          }
         },
       ),
     );
   }
 
-  Widget _buildBanner(HomeController homeController, bool isDark) {
+  Widget _buildProductCard(Map<String, dynamic> product, bool isDark) {
     return Container(
-      height: 180,
+      width: 160,
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: AppStyles.shadowListMedium,
+        color: isDark ? Color(0xFF2D2D2D) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -50,
-            top: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.white.withOpacity(0.1),
+          // Product image with favorite button
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: product['image'],
+                  height: 180,
+                  width: 160,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: isDark ? Color(0xFF3A3A3A) : Color(0xFFF5F5F5),
+                  ),
+                ),
               ),
-            ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.favorite_outline,
+                    color: AppColors.lightPrimary,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
           ),
+          // Product name and price
           Padding(
-            padding: const EdgeInsets.all(AppStyles.spacing),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Big Sale',
-                  style: AppStyles.displaySmall.copyWith(
-                    color: AppColors.white,
+                  product['name'],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: AppStyles.spacingSmall),
-                Text(
-                  'Get up to 50% off on selected items',
-                  style: AppStyles.bodyMedium.copyWith(color: AppColors.white),
-                ),
-                const SizedBox(height: AppStyles.spacing),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.white,
-                  ),
-                  onPressed: () {},
-                  child: Text(
-                    'Shop Now',
-                    style: AppStyles.labelMedium.copyWith(
-                      color: AppColors.lightPrimary,
+                const SizedBox(height: 6),
+                if (product['oldPrice'] != null)
+                  Row(
+                    children: [
+                      Text(
+                        product['price'],
+                        style: AppStyles.bodySmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkText
+                              : AppColors.lightText,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        product['oldPrice'],
+                        style: AppStyles.bodySmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    product['price'],
+                    style: AppStyles.bodySmall.copyWith(
+                      color: isDark ? AppColors.darkText : AppColors.lightText,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategories(HomeController homeController, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Categories', style: AppStyles.headlineMedium),
-        const SizedBox(height: AppStyles.spacingSmall),
-        Obx(
-          () => SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: homeController.categories.map((category) {
-                final isSelected =
-                    homeController.selectedCategory.value == category;
-                return Padding(
-                  padding: const EdgeInsets.only(right: AppStyles.spacingSmall),
-                  child: FilterChip(
-                    label: Text(category),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      homeController.selectCategory(category);
-                    },
-                    backgroundColor: isDark
-                        ? AppColors.darkSurface
-                        : AppColors.lightBackground,
-                    selectedColor: isDark
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
-                    labelStyle: AppStyles.bodySmall.copyWith(
-                      color: isSelected
-                          ? AppColors.white
-                          : (isDark ? AppColors.darkText : AppColors.lightText),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppStyles.radiusMedium,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeaturedSection(HomeController homeController, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Featured Products', style: AppStyles.headlineMedium),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'See All',
-                style: AppStyles.bodySmall.copyWith(
-                  color: isDark
-                      ? AppColors.darkPrimary
-                      : AppColors.lightPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppStyles.spacingSmall),
-        Obx(
-          () => SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: homeController.featuredProducts
-                  .map(
-                    (product) => Padding(
-                      padding: const EdgeInsets.only(right: AppStyles.spacing),
-                      child: _buildProductCard(
-                        product,
-                        isDark,
-                        context: Get.context!,
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAllProductsSection(
-    HomeController homeController,
-    bool isDark,
-    BuildContext context,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('All Products', style: AppStyles.headlineMedium),
-            TextButton(
-              onPressed: () {
-                Get.toNamed(AppConstants.productListRoute);
-              },
-              child: Text(
-                'See All',
-                style: AppStyles.bodySmall.copyWith(
-                  color: isDark
-                      ? AppColors.darkPrimary
-                      : AppColors.lightPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppStyles.spacingSmall),
-        Obx(
-          () => homeController.products.isEmpty
-              ? EmptyStateWidget(
-                  title: 'No Products',
-                  subtitle: 'No products found',
-                  icon: Icons.shopping_bag_outlined,
-                )
-              : GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: AppStyles.spacing,
-                    mainAxisSpacing: AppStyles.spacing,
-                  ),
-                  itemCount: homeController.products.length,
-                  itemBuilder: (context, index) {
-                    return _buildProductCard(
-                      homeController.products[index],
-                      isDark,
-                      context: context,
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductCard(
-    Product product,
-    bool isDark, {
-    required BuildContext context,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Get.toNamed(AppConstants.productDetailRoute);
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppStyles.radiusMedium),
-                  topRight: Radius.circular(AppStyles.radiusMedium),
-                ),
-                color: isDark
-                    ? AppColors.darkSurface
-                    : AppColors.lightBackground,
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (context, url) => const LoadingWidget(),
-                      errorWidget: (context, url, error) =>
-                          Icon(Icons.image_outlined, size: AppStyles.iconLarge),
-                    ),
-                  ),
-                  Positioned(
-                    top: AppStyles.spacingSmall,
-                    right: AppStyles.spacingSmall,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppStyles.spacingXSmall),
-                      decoration: const BoxDecoration(
-                        color: AppColors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.favorite_outline,
-                        size: AppStyles.iconSmall,
-                        color: AppColors.lightError,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(AppStyles.spacingSmall),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppStyles.labelLarge,
-                  ),
-                  const SizedBox(height: AppStyles.spacingXSmall),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: AppStyles.iconSmall,
-                        color: AppColors.starColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text('${product.rating}', style: AppStyles.labelSmall),
-                    ],
-                  ),
-                  const SizedBox(height: AppStyles.spacingSmall),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '\$${product.price}',
-                        style: AppStyles.labelLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.add_circle_outline),
-                        iconSize: AppStyles.iconMedium,
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDrawer(BuildContext context) {
-    final authController = Get.find<AuthController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(AppStyles.spacing),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(AppStyles.radiusLarge),
-            topRight: Radius.circular(AppStyles.radiusLarge),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Profile'),
-              onTap: () {
-                Get.back();
-                Get.toNamed(AppConstants.profileRoute);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_bag_outlined),
-              title: const Text('Orders'),
-              onTap: () {
-                Get.back();
-                Get.toNamed(AppConstants.ordersRoute);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Settings'),
-              onTap: () {
-                Get.back();
-                Get.toNamed(AppConstants.settingsRoute);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                Get.back();
-                authController.logout();
-              },
-            ),
-          ],
-        ),
-      ),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppStyles.radiusLarge),
-          topRight: Radius.circular(AppStyles.radiusLarge),
-        ),
       ),
     );
   }
